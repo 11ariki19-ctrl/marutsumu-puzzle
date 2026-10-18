@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#061b33">
+<meta name="description" content="片手で潜る、深海ワンモアラン。危険を避け、真珠と古代遺物を集めよう。">
+<title>ABYSS RUN — 深海探査局</title>
+<style>
+:root{color-scheme:dark;--bg:#061b33;--panel:rgba(9,35,61,.88);--line:rgba(135,222,255,.22);--cyan:#6deaff;--gold:#ffd878;--muted:#a4c8d8;--pink:#ff759c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;color:#effaff;overscroll-behavior:none;touch-action:manipulation}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+#app{position:relative;width:100%;height:100%;height:100dvh;overflow:hidden;background:radial-gradient(ellipse at 50% 15%,#12476a 0,#092945 38%,#041323 100%)}
+#ocean{position:absolute;inset:0;width:100%;height:100%;display:block}
+.screen{position:absolute;inset:0;display:none;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);overflow:auto}
+.screen.active{display:flex;flex-direction:column}
+#home{justify-content:space-between}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:.13em}
+.brand{font-size:12px;letter-spacing:.24em;color:var(--cyan);font-weight:900}
+.currency{border:1px solid var(--line);background:#082744cc;padding:8px 12px;border-radius:99px;color:var(--gold);font-weight:800}
+.hero{margin:auto 0;text-align:center;position:relative;padding:24px 0}
+.eyebrow{font-size:11px;letter-spacing:.28em;color:var(--cyan);font-weight:900}
+h1{font-size:clamp(40px,13vw,68px);line-height:.95;letter-spacing:-.07em;margin:12px 0 10px;text-shadow:0 0 32px #49d7ff60}
+h1 span{display:block;font-size:clamp(17px,5vw,25px);letter-spacing:.16em;color:#c7f7ff;margin-top:14px}
+.subtitle{max-width:290px;margin:18px auto 0;color:#b6d5e3;font-size:13px;line-height:1.9}
+.bigbtn{width:100%;min-height:58px;border-radius:18px;font-weight:900;font-size:16px;background:linear-gradient(135deg,#8af3ff,#39b8df);color:#03243a;box-shadow:0 8px 28px #30c8ff2b}
+.bigbtn:active,.secondary:active,.boost:active{transform:scale(.98)}
+.secondary{min-height:48px;border:1px solid var(--line);background:#0a2a45c9;border-radius:15px;padding:12px 16px;font-weight:800}
+.home-actions{display:grid;gap:10px;width:100%;max-width:420px;margin:0 auto}
+.home-foot{text-align:center;font-size:10px;letter-spacing:.12em;color:#7297aa;margin-top:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;backdrop-filter:blur(12px);box-shadow:0 16px 40px #0002}
+.screen-title{font-size:23px;font-weight:900;letter-spacing:-.04em;margin:6px 0}
+.muted{color:var(--muted);font-size:13px;line-height:1.7}
+.hud{position:absolute;top:calc(env(safe-area-inset-top) + 12px);left:14px;right:14px;display:none;pointer-events:none;z-index:3}
+.hud.show{display:block}
+.hudrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hudbox{background:#03172bcc;border:1px solid #8beaff33;border-radius:13px;padding:8px 11px;backdrop-filter:blur(8px);min-width:72px}
+.hudlabel{font-size:9px;color:#9bcbdc;letter-spacing:.13em}
+.hudnum{font-size:19px;font-weight:900;font-variant-numeric:tabular-nums}
+.oxygen{height:6px;background:#173c51;border-radius:99px;overflow:hidden;margin-top:7px;width:100%}
+#oxygenFill{height:100%;width:100%;background:linear-gradient(90deg,#60f4e7,#a2f8ff);border-radius:99px;transition:width .1s linear}
+#depthText{color:var(--cyan)}
+#gameControls{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);left:18px;right:18px;display:none;align-items:end;justify-content:space-between;z-index:4;pointer-events:none}
+#gameControls.show{display:flex}
+.controlhint{font-size:11px;color:#d2edf6;background:#031a2cb8;border:1px solid #91e6ff2b;border-radius:12px;padding:10px 12px;max-width:65%;line-height:1.5}
+.boost{pointer-events:auto;width:72px;height:72px;border-radius:24px;border:1px solid #fff8;background:linear-gradient(145deg,#fff0a8,#f7a63d);color:#432600;font-weight:1000;box-shadow:0 8px 24px #ffb13d35}
+.boost small{display:block;font-size:9px;letter-spacing:.08em;margin-top:3px}
+.boost:disabled{filter:grayscale(1);opacity:.48}
+.overlay{position:absolute;z-index:6;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:#03111bd9;backdrop-filter:blur(10px)}
+.overlay.show{display:flex}
+.resultcard{width:100%;max-width:390px;text-align:center}
+.result-kicker{font-size:11px;letter-spacing:.22em;color:var(--cyan);font-weight:900}
+.result-score{font-size:58px;font-weight:1000;letter-spacing:-.06em;margin:5px 0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}
+.stat{border:1px solid var(--line);border-radius:14px;padding:12px 8px;background:#0b2b44}
+.stat b{display:block;font-size:20px;color:var(--gold)}
+.stat span{font-size:10px;color:var(--muted)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.progress{height:7px;background:#163c53;border-radius:99px;overflow:hidden;margin:10px 0}
+.progress>div{height:100%;background:linear-gradient(90deg,#65d8ff,#b0f8ff);border-radius:99px}
+.upgrade{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;border:1px solid var(--line);border-radius:15px;padding:13px;margin-top:10px;background:#09253d}
+.upgrade b{font-size:13px}.upgrade p{font-size:11px;color:var(--muted);margin:4px 0 0}
+.buy{border-radius:12px;background:#fbd16c;color:#402a00;font-weight:900;padding:10px 12px;min-width:83px}
+.buy:disabled{opacity:.4}
+.listrow{padding:13px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.listrow:last-child{border-bottom:0}
+.iconbox{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#123b56;font-size:21px;flex:none}
+#toast{position:absolute;z-index:10;top:28%;left:50%;transform:translate(-50%,-10px);opacity:0;transition:.2s;pointer-events:none;background:#e5fbff;color:#063047;border-radius:99px;padding:10px 16px;font-weight:900;font-size:12px;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.smallnote{text-align:center;color:#83aabd;font-size:10px;line-height:1.7;margin-top:12px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);background:none;padding:8px 0;font-weight:800;align-self:flex-start}
+@media(min-width:600px){.screen{width:min(100%,480px);left:50%;transform:translateX(-50%)}#app:after{content:"";position:absolute;inset:0;pointer-events:none;border-left:1px solid #8de8ff0c;border-right:1px solid #8de8ff0c;margin:auto;width:min(100%,480px)}.hud,#gameControls{left:max(18px,calc((100% - 444px)/2));right:max(18px,calc((100% - 444px)/2))}}
+@media(max-height:680px){.hero{padding:8px 0}h1{font-size:42px}.subtitle{margin-top:10px}.panel{padding:14px}.bigbtn{min-height:52px}}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="ocean" aria-label="深海のゲーム画面"></canvas>
+<section id="home" class="screen active">
+  <div class="topline"><div class="brand">ABYSS / DEEP SEA LAB</div><div class="currency">✦ <span id="homePearls">0</span></div></div>
+  <div class="hero"><div class="eyebrow">ONE THUMB DEEP-SEA RUN</div><h1>ABYSS<span>深海探査局</span></h1><p class="subtitle">光の届かない海の底へ。<br>障害物をかわし、失われた遺物と真珠を回収せよ。</p></div>
+  <div class="home-actions"><button class="bigbtn" id="startBtn">潜水を開始する　↗</button><button class="secondary" id="upgradeBtn">潜水装備を強化する</button><button class="secondary" id="recordsBtn">探査記録・ミッション</button><div class="home-foot">NO SIGNAL. NO SECOND CHANCE. KEEP DIVING.</div></div>
+</section>
+<section id="upgrades" class="screen">
+<button class="back" data-home>← メニューへ戻る</button><div class="screen-title">潜水装備ラボ</div><p class="muted">回収した真珠で装備を強化。深く潜るほど、見たことのない海域に出会える。</p>
+<div class="panel"><div class="row"><span class="muted">所持真珠</span><b style="color:var(--gold);font-size:22px">✦ <span id="upgradePearls">0</span></b></div><div id="upgradeList"></div></div>
+<div class="smallnote">強化内容はこの端末に自動保存されます。</div>
+</section>
+<section id="records" class="screen">
+<button class="back" data-home>← メニューへ戻る</button><div class="screen-title">探査記録</div><p class="muted">海底での成果を確認し、今日の任務を達成しよう。</p>
+<div class="panel"><div class="row"><div><div class="muted">自己ベスト深度</div><div style="font-size:30px;font-weight:1000;color:var(--cyan)"><span id="bestDepth">0</span><small style="font-size:12px"> m</small></div></div><div><div class="muted">総探査回数</div><div style="font-size:30px;font-weight:1000"><span id="runs">0</span><small style="font-size:12px"> 回</small></div></div></div><div class="progress"><div id="missionProgress" style="width:0%"></div></div><div class="row"><b id="missionTitle">初回潜水</b><span id="missionCount" class="muted">0 / 1</span></div><p id="missionDesc" class="muted">まずは海へ潜ろう。</p></div>
+<div class="panel" style="margin-top:14px"><div class="listrow"><div class="iconbox">🫧</div><div style="flex:1"><b>回収した真珠</b><div class="muted">装備強化に使える海の宝石</div></div><b style="color:var(--gold)" id="totalPearls">0</b></div><div class="listrow"><div class="iconbox">🏺</div><div style="flex:1"><b>古代遺物</b><div class="muted">深海に眠る未知の文明</div></div><b id="relics">0</b></div></div>
+</section>
+<div class="hud" id="hud"><div class="hudrow"><div class="hudbox"><div class="hudlabel">DEPTH</div><div class="hudnum" id="depthText">0 m</div></div><div class="hudbox"><div class="hudlabel">PEARLS</div><div class="hudnum" style="color:var(--gold)">✦ <span id="runPearls">0</span></div></div><button id="pauseBtn" class="hudbox" style="pointer-events:auto;color:#c6f6ff;font-weight:900">Ⅱ</button></div><div class="hudbox" style="margin-top:8px"><div class="row"><span class="hudlabel">OXYGEN SUPPLY</span><span class="hudlabel" id="oxygenLabel">100%</span></div><div class="oxygen"><div id="oxygenFill"></div></div></div></div>
+<div id="gameControls"><div class="controlhint">← → スワイプで移動<br>光る真珠を集めて、危険を避けよう</div><button class="boost" id="boostBtn">⚡<small>BOOST</small></button></div>
+<div class="overlay" id="pauseOverlay"><div class="panel resultcard"><div class="result-kicker">DIVE PAUSED</div><h2 class="screen-title">ひと息つこう</h2><p class="muted">深海は逃げない。準備ができたら再開しよう。</p><button class="bigbtn" id="resumeBtn" style="margin-top:14px">潜水を再開</button><button class="secondary" id="quitBtn" style="width:100%;margin-top:9px">潜水を終了する</button></div></div>
+<div class="overlay" id="resultOverlay"><div class="panel resultcard"><div class="result-kicker" id="resultKicker">DIVE COMPLETE</div><h2 class="screen-title" id="resultTitle">探査終了</h2><div class="result-score"><span id="resultDepth">0</span><span style="font-size:17px;color:var(--muted)"> m</span></div><div class="muted">到達深度</div><div class="stats"><div class="stat"><b id="resultPearls">0</b><span>獲得した真珠</span></div><div class="stat"><b id="resultRelics">0</b><span>古代遺物</span></div><div class="stat"><b id="resultTime">0s</b><span>潜水時間</span></div><div class="stat"><b id="resultBest">0m</b><span>自己ベスト</span></div></div><p class="muted" id="resultMessage">深海の記録が更新された。</p><button class="bigbtn" id="againBtn">もう一度潜る　↗</button><button class="secondary" id="resultHomeBtn" style="width:100%;margin-top:9px">探査局へ戻る</button></div></div>
+<div id="toast"></div>
+</div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const STORE='abyss-run-save-v1';
+const defaults={pearls:0,totalPearls:0,relics:0,bestDepth:0,runs:0,upgrades:{oxygen:0,magnet:0,thruster:0},missionDone:false};
+let save;
+try{save={...defaults,...JSON.parse(localStorage.getItem(STORE)||'{}')};save.upgrades={...defaults.upgrades,...(save.upgrades||{})}}catch(e){save={...defaults,upgrades:{...defaults.upgrades}}}
+function persist(){try{localStorage.setItem(STORE,JSON.stringify(save))}catch(e){}}
+const upgradeData=[
+{id:'oxygen',icon:'🫧',name:'酸素タンク拡張',desc:'酸素の最大量が増え、長く潜れる。',base:35,max:5},
+{id:'magnet',icon:'🧲',name:'真珠レーダー',desc:'近くの真珠を引き寄せる範囲が広がる。',base:45,max:5},
+{id:'thruster',icon:'⚡',name:'高圧スラスター',desc:'ブーストの回復が早くなり、危険を抜けやすい。',base:55,max:5}
+];
+const canvas=$('ocean'),ctx=canvas.getContext('2d');
+let W=0,H=0,dpr=1,screen='home',running=false,paused=false,last=0,elapsed=0,depth=0,oxygen=100,runPearls=0,runRelics=0,boost=100,player={lane:1,x:0,y:0},objects=[],bubbles=[],particles=[],spawn=0,invuln=0,flash=0,swipeStart=null,toastTimer=0;
+const lanes=[.2,.5,.8];
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);player.x=W*lanes[player.lane];player.y=H*.69}
+window.addEventListener('resize',resize,{passive:true});resize();
+function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));if(name==='home'||name==='upgrades'||name==='records')$(name).classList.add('active');screen=name;updateHome();if(name==='upgrades')renderUpgrades();if(name==='records')renderRecords()}
+function updateHome(){$('homePearls').textContent=save.pearls;$('upgradePearls').textContent=save.pearls}
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1500)}
+function price(u){return Math.floor(u.base*Math.pow(1.65,save.upgrades[u.id]))}
+function renderUpgrades(){updateHome();$('upgradeList').innerHTML='';upgradeData.forEach(u=>{const level=save.upgrades[u.id],max=level>=u.max,cost=price(u);const div=document.createElement('div');div.className='upgrade';div.innerHTML='<div><b>'+u.icon+' '+u.name+' <span style="color:var(--cyan)">Lv.'+level+'</span></b><p>'+u.desc+'</p></div><button class="buy" '+(max||save.pearls<cost?'disabled':'')+'>'+ (max?'MAX':'✦ '+cost)+'</button>';div.querySelector('button').addEventListener('click',()=>{if(max||save.pearls<cost)return;save.pearls-=cost;save.upgrades[u.id]++;persist();renderUpgrades();toast('装備を強化した！')});$('upgradeList').appendChild(div)})}
+function renderRecords(){const m=save.runs===0?{title:'初回潜水',desc:'まずは海へ潜ろう。',goal:1,now:0}:save.bestDepth<300?{title:'深度300mに到達',desc:'300mまで潜って深海の入り口を突破しよう。',goal:300,now:save.bestDepth}:{title:'深海の開拓者',desc:'深度1000mを目指そう。',goal:1000,now:save.bestDepth};$('bestDepth').textContent=save.bestDepth;$('runs').textContent=save.runs;$('totalPearls').textContent=save.totalPearls;$('relics').textContent=save.relics;$('missionTitle').textContent=m.title;$('missionDesc').textContent=m.desc;$('missionCount').textContent=Math.min(m.now,m.goal)+' / '+m.goal;$('missionProgress').style.width=Math.min(100,m.now/m.goal*100)+'%'}
+function startRun(){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$('pauseOverlay').classList.remove('show');$('resultOverlay').classList.remove('show');screen='game';running=true;paused=false;elapsed=0;depth=0;oxygen=100+save.upgrades.oxygen*12;runPearls=0;runRelics=0;boost=100;spawn=.3;invuln=0;flash=0;objects=[];particles=[];bubbles=[];player.lane=1;player.x=W*.5;player.y=H*.69;$('hud').classList.add('show');$('gameControls').classList.add('show');$('runPearls').textContent='0';$('pauseBtn').textContent='Ⅱ';last=performance.now();requestAnimationFrame(loop)}
+function endRun(reason){if(!running)return;running=false;paused=false;$('hud').classList.remove('show');$('gameControls').classList.remove('show');const d=Math.floor(depth);save.runs++;save.bestDepth=Math.max(save.bestDepth,d);save.pearls+=runPearls;save.totalPearls+=runPearls;save.relics+=runRelics;persist();$('resultKicker').textContent=reason==='oxygen'?'OXYGEN DEPLETED':'DIVE COMPLETE';$('resultTitle').textContent=reason==='oxygen'?'酸素が尽きた…':'探査終了';$('resultDepth').textContent=d;$('resultPearls').textContent=runPearls;$('resultRelics').textContent=runRelics;$('resultTime').textContent=Math.floor(elapsed)+'s';$('resultBest').textContent=save.bestDepth+'m';$('resultMessage').textContent=d>=save.bestDepth?'自己ベスト更新！深海の記録が刻まれた。':reason==='collision'?'衝突でスーツが損傷した。装備を強化して再挑戦しよう。':'回収した真珠で装備を強化し、もっと深くへ。';$('resultOverlay').classList.add('show');updateHome()}
+function togglePause(){if(!running)return;paused=!paused;$('pauseOverlay').classList.toggle('show',paused);$('pauseBtn').textContent=paused?'▶':'Ⅱ';if(!paused){last=performance.now();requestAnimationFrame(loop)}}
+function move(dir){if(!running||paused)return;player.lane=Math.max(0,Math.min(2,player.lane+dir))}
+function useBoost(){if(!running||paused||boost<30)return;boost-=30;invuln=Math.max(invuln,1.15);flash=.35;for(let i=0;i<22;i++)particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*170,vy:80+Math.random()*230,life:.5+Math.random()*.5,color:'#7df5ff',r:2+Math.random()*4});toast('スラスター起動！')}
+function spawnObject(){const lane=Math.floor(Math.random()*3);const r=Math.random();let type=r<.53?'pearl':r<.59?'relic':r<.79?'rock':'mine';if(depth>250&&r>.78&&r<.88)type='current';const size=type==='rock'?20+Math.random()*12:type==='mine'?18:type==='relic'?17:10;objects.push({type,lane,x:W*lanes[lane],y:-40,size,phase:Math.random()*6.28,hit:false})}
+function collide(o){const dx=Math.abs(player.x-o.x),dy=Math.abs(player.y-o.y);return dx<o.size+17&&dy<o.size+19}
+function loop(now){if(!running||paused)return;const dt=Math.min(.035,(now-last)/1000||0);last=now;elapsed+=dt;depth+=dt*(28+Math.min(34,depth/35))*(invuln>0?1.05:1);oxygen-=dt*(3.6-save.upgrades.oxygen*.18);boost=Math.min(100,boost+dt*(10+save.upgrades.thruster*2));invuln=Math.max(0,invuln-dt);flash=Math.max(0,flash-dt);player.x+=(W*lanes[player.lane]-player.x)*Math.min(1,dt*12);player.y=H*.69;
+spawn-=dt;if(spawn<=0){spawnObject();spawn=Math.max(.28,.78-depth/4500)+(Math.random()*.22)}
+for(let i=objects.length-1;i>=0;i--){const o=objects[i];o.y+=dt*(175+Math.min(180,depth/7));o.phase+=dt*2;if(o.type==='current')o.x+=Math.sin(o.phase)*dt*32;if(o.y>H+45){objects.splice(i,1);continue}
+if(!o.hit&&collide(o)){o.hit=true;if(o.type==='pearl'){runPearls++;$('runPearls').textContent=runPearls;particles.push({x:o.x,y:o.y,life:.5,color:'#ffe58a',r:15});objects.splice(i,1);continue}
+if(o.type==='relic'){runRelics++;runPearls+=5;$('runPearls').textContent=runPearls;particles.push({x:o.x,y:o.y,life:.9,color:'#d8a2ff',r:26});objects.splice(i,1);toast('古代遺物！真珠＋5');continue}
+if(o.type==='rock'||o.type==='mine'){if(invuln<=0){oxygen-=o.type==='mine'?20:14;invuln=.9;flash=.2;particles.push({x:player.x,y:player.y,life:.55,color:'#ff799e',r:26});toast(o.type==='mine'?'機雷に接触！':'岩に衝突！');objects.splice(i,1);if(oxygen<=0){oxygen=0;endRun('collision');return}}else{objects.splice(i,1)}}
+}}
+for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.y+=(p.vy||-30)*dt;p.x+=(p.vx||0)*dt;if(p.life<=0)particles.splice(i,1)}
+$('depthText').textContent=Math.floor(depth)+' m';$('oxygenLabel').textContent=Math.max(0,Math.floor(oxygen))+'%';$('oxygenFill').style.width=Math.max(0,oxygen/(100+save.upgrades.oxygen*12)*100)+'%';$('oxygenFill').style.background=oxygen<25?'linear-gradient(90deg,#ff648e,#ffb1bd)':'linear-gradient(90deg,#60f4e7,#a2f8ff)';$('boostBtn').disabled=boost<30;$('boostBtn').innerHTML='⚡<small>BOOST '+Math.floor(boost)+'%</small>';
+if(oxygen<=0){endRun('oxygen');return}
+drawGame(dt);requestAnimationFrame(loop)}
+function drawGame(dt){ctx.clearRect(0,0,W,H);const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0c4565');g.addColorStop(.45,'#082b49');g.addColorStop(1,'#020d1b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+const time=performance.now()/1000;
+for(let i=0;i<3;i++){const x=W*lanes[i];ctx.strokeStyle='rgba(113,221,255,.10)';ctx.lineWidth=1;ctx.setLineDash([4,12]);ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();ctx.setLineDash([])}
+for(let i=0;i<32;i++){let y=((i*97+time*(20+i%4*9))%(H+30))-10;let x=(i*137%Math.max(W,1));ctx.fillStyle='rgba(133,222,255,'+(.1+(i%3)*.05)+')';ctx.beginPath();ctx.arc(x,y,1+i%2,0,Math.PI*2);ctx.fill()}
+for(let i=0;i<7;i++){let x=(i*83+Math.sin(time*.5+i)*18)%W,y=((i*139+time*(18+i*3))%(H+60))-20;ctx.strokeStyle='rgba(101,210,239,.12)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+22,y-18,x-20,y-36,x+4,y-55);ctx.stroke()}
+objects.forEach(o=>{ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.phase*.15);if(o.type==='pearl'){ctx.shadowBlur=18;ctx.shadowColor='#ffe69b';const gr=ctx.createRadialGradient(-3,-4,1,0,0,o.size);gr.addColorStop(0,'#fffef1');gr.addColorStop(.4,'#ffe69b');gr.addColorStop(1,'#b9793d');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,o.size,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-3,-4,3,0,Math.PI*2);ctx.fill()}else if(o.type==='relic'){ctx.shadowBlur=22;ctx.shadowColor='#b987ff';ctx.fillStyle='#a77aff';ctx.beginPath();for(let j=0;j<6;j++){const a=j*Math.PI/3-Math.PI/2;ctx.lineTo(Math.cos(a)*o.size,Math.sin(a)*o.size)}ctx.closePath();ctx.fill();ctx.strokeStyle='#f2dfff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('✧',0,5)}else if(o.type==='rock'){ctx.fillStyle='#526d7c';ctx.strokeStyle='#8db6c8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-o.size*.9,-o.size*.1);ctx.lineTo(-o.size*.45,-o.size*.9);ctx.lineTo(o.size*.45,-o.size*.8);ctx.lineTo(o.size,.0);ctx.lineTo(o.size*.5,o.size*.8);ctx.lineTo(-o.size*.5,o.size*.65);ctx.closePath();ctx.fill();ctx.stroke()}else if(o.type==='mine'){ctx.shadowBlur=14;ctx.shadowColor='#ff6688';ctx.fillStyle='#ff527e';ctx.beginPath();ctx.arc(0,0,o.size*.7,0,Math.PI*2);ctx.fill();for(let j=0;j<8;j++){let a=j*Math.PI/4;ctx.strokeStyle='#ff91ac';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.cos(a)*o.size*.65,Math.sin(a)*o.size*.65);ctx.lineTo(Math.cos(a)*o.size*1.15,Math.sin(a)*o.size*1.15);ctx.stroke()}}else{ctx.strokeStyle='#68edff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,o.size,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#68edff';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill()}ctx.restore()});
+particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.shadowBlur=16;ctx.shadowColor=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r*Math.min(1,p.life*2),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.shadowBlur=0});
+ctx.save();ctx.translate(player.x,player.y);if(invuln>0&&Math.floor(time*18)%2===0)ctx.globalAlpha=.5;ctx.shadowBlur=24;ctx.shadowColor='#58eaff';ctx.fillStyle='#6eeaff';ctx.beginPath();ctx.ellipse(0,0,18,24,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#d9fbff';ctx.beginPath();ctx.ellipse(0,-4,12,13,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0b4967';ctx.beginPath();ctx.ellipse(0,-4,8,9,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#a2f7ff';ctx.beginPath();ctx.arc(-3,-7,2.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2a8eb1';ctx.beginPath();ctx.moveTo(-11,12);ctx.lineTo(-19,22);ctx.lineTo(-6,19);ctx.fill();ctx.beginPath();ctx.moveTo(11,12);ctx.lineTo(19,22);ctx.lineTo(6,19);ctx.fill();ctx.strokeStyle='#9ff5ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,20);ctx.lineTo(0,29+Math.sin(time*16)*5);ctx.stroke();ctx.restore();
+if(flash>0){ctx.fillStyle='rgba(255,77,125,'+flash*.6+')';ctx.fillRect(0,0,W,H)}
+if(!running&&screen==='home'){/* ambient scene only */}}
+canvas.addEventListener('pointerdown',e=>{if(screen!=='game'||paused)return;swipeStart={x:e.clientX,y:e.clientY,id:e.pointerId};try{canvas.setPointerCapture(e.pointerId)}catch(err){}});
+canvas.addEventListener('pointerup',e=>{if(!swipeStart)return;const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;if(Math.abs(dx)>22&&Math.abs(dx)>Math.abs(dy)*.75)move(dx>0?1:-1);else if(Math.abs(dx)<18&&Math.abs(dy)<18){const mid=window.innerWidth/2;move(e.clientX>mid?1:-1)}swipeStart=null});
+canvas.addEventListener('pointercancel',()=>swipeStart=null);
+$('startBtn').addEventListener('click',startRun);$('againBtn').addEventListener('click',startRun);$('upgradeBtn').addEventListener('click',()=>showScreen('upgrades'));$('recordsBtn').addEventListener('click',()=>showScreen('records'));document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>showScreen('home')));$('pauseBtn').addEventListener('click',togglePause);$('resumeBtn').addEventListener('click',togglePause);$('quitBtn').addEventListener('click',()=>endRun('quit'));$('boostBtn').addEventListener('click',useBoost);$('resultHomeBtn').addEventListener('click',()=>{$('resultOverlay').classList.remove('show');showScreen('home')});
+function ambient(now){if(!running){drawGame(.016);requestAnimationFrame(ambient)}}requestAnimationFrame(ambient);
+updateHome();renderRecords();
+})();
+</script>
+</body>
+</html>
