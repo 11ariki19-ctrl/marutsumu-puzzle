@@ -32,6 +32,8 @@ jobs:
           Path("/tmp/game.js").write_text("\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/game.js
+      - name: Run game smoke tests
+        run: node --test tests/smoke.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
