@@ -38,7 +38,7 @@ test('match completion records history and awards player experience', () => {
 });
 
 test('legacy saves are normalized and club-facility screens are absent', () => {
-  assert.match(script, /function\\s+normalize\\s*\\(/);
+  assert.match(script, /function\s+normalize\s*\(/);
   assert.doesNotMatch(html, /クラブ施設の建設|クラブタウンのマップ|スポンサー契約画面/);
   assert.doesNotMatch(html, /data-action="[^"]*(?:facility|sponsor|town)[^"]*"/i);
 });
