@@ -53,17 +53,27 @@ export function stepMatch(m,dt,input={x:0,y:0,dash:false},stats={speed:1,power:1
  let dx=target.x-cpu.x,dy=target.y-cpu.y,l=Math.hypot(dx,dy)||1;
  const cpuDash=l>200&&cpu.energy>30;
  const oldX=cpu.x,oldY=cpu.y;
+ const oldDistance=l;
  movePlayer(cpu,dx/l,dy/l,dt,{speed:1.02},cpuDash);
  const moved=Math.hypot(cpu.x-oldX,cpu.y-oldY);
- if(moved<0.05&&l>42)cpu.stuckTime=(cpu.stuckTime||0)+dt;else cpu.stuckTime=0;
- if(cpu.stuckTime>1.0){
-  // Detour away from the wall/obstacle instead of repeating the same blocked movement.
-  const detourX=clamp(target.x+(cpu.x<=32?95:cpu.x>=W-32?-95:0),55,W-55);
-  const detourY=clamp(target.y+(cpu.y<=32?95:cpu.y>=H-32?-95:0),55,H-55);
-  const ax=detourX-cpu.x,ay=detourY-cpu.y,al=Math.hypot(ax,ay)||1;
+ const newDistance=Math.hypot(target.x-cpu.x,target.y-cpu.y);
+ // Detect lack of progress toward the target, not only a perfectly stationary frame.
+ if(l>48&&newDistance>=oldDistance-0.08)cpu.stuckTime=(cpu.stuckTime||0)+dt;
+ else cpu.stuckTime=0;
+ if(cpu.stuckTime>0.65){
+  // Take a short sideways detour, then resume pursuit on the next frames.
+  const side=(Math.floor(m.elapsed*2)%2===0)?1:-1;
+  let ax=-dy/l*side,ay=dx/l*side;
+  if(cpu.x<55) {ax=Math.max(0,ax);ay=side;}
+  if(cpu.x>W-55) {ax=Math.min(0,ax);ay=side;}
+  if(cpu.y<55) {ay=Math.max(0,ay);ax=side;}
+  if(cpu.y>H-55) {ay=Math.min(0,ay);ax=side;}
+  const al=Math.hypot(ax,ay)||1;
   movePlayer(cpu,ax/al,ay/al,dt,{speed:1.08},false);
-  if(Math.hypot(cpu.x-oldX,cpu.y-oldY)>0.05)cpu.stuckTime=0;
+  cpu.stuckTime=0;
  }
+ // Recover invalid AI coordinates without affecting the player's controls.
+ if(!Number.isFinite(cpu.x)||!Number.isFinite(cpu.y)){cpu.x=830;cpu.y=320;cpu.vx=0;cpu.vy=0;cpu.stuckTime=0;}
  // Repair invalid state defensively so one bad frame cannot freeze the whole match.
  if(!Number.isFinite(cpu.x)||!Number.isFinite(cpu.y)){cpu.x=830;cpu.y=320;cpu.vx=0;cpu.vy=0;cpu.stuckTime=0;}
  cpu.x=clamp(cpu.x,28,W-28);cpu.y=clamp(cpu.y,28,H-28);
