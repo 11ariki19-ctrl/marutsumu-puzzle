@@ -16,7 +16,7 @@
 </main><footer>RIFT ATHLETICS — ORIGINAL SPORT / Local save enabled</footer></div>
 <script type="module">
 import {createPlayer,createMatch,stepMatch,act,settleCareer,trainCareer,normalizeSave,clamp,distance} from './engine.js';
-const STORE='rift-athletics-save-v1';let career=normalizeSave(load()),match=null,lastFrame=0,raf=0,keys={},input={x:0,y:0,dash:false,claim:false},joyPointer=null,joyOrigin=null,toastTimer=null;
+const STORE='rift-athletics-save-v1';let career=normalizeSave(load()),match=null,lastFrame=0,raf=0,keys={},input={x:0,y:0,dash:false,claim:false},joyPointer=null,joyOrigin=null,dashButtonHeld=false,toastTimer=null;
 const $=id=>document.getElementById(id);
 function load(){try{return JSON.parse(localStorage.getItem(STORE)||'null')}catch{return null}}
 function save(){localStorage.setItem(STORE,JSON.stringify(career));updateHud();renderCareer()}
@@ -58,10 +58,10 @@ function doAction(kind){if(!match||match.status!=='playing')return;const stats={
 function setMove(x,y){input.x=x;input.y=y}
 document.querySelectorAll('[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen)));
 $('playNow').addEventListener('click',startMatch);$('rematch').addEventListener('click',startMatch);
-document.querySelectorAll('[data-action]').forEach(b=>{const k=b.dataset.action;b.addEventListener('pointerdown',e=>{e.preventDefault();if(k==='dash')input.dash=true;else doAction(k)});if(k==='dash')['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>input.dash=false))});
+document.querySelectorAll('[data-action]').forEach(b=>{const k=b.dataset.action;b.addEventListener('pointerdown',e=>{e.preventDefault();if(k==='dash'){dashButtonHeld=true;input.dash=true}else doAction(k)});if(k==='dash')['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>{dashButtonHeld=false;input.dash=false}))});
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k===' ' )doAction('break');if(k==='e')doAction('special');if(k==='f')doAction('claim')});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
-function updateKeys(){if(!match||match.status!=='playing')return;let x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(x||y){input.x=x;input.y=y}else if(!joyPointer){input.x=0;input.y=0}requestAnimationFrame(updateKeys)}requestAnimationFrame(updateKeys);
+function updateKeys(){if(!match||match.status!=='playing')return;let x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(x||y){input.x=x;input.y=y}else if(!joyPointer){input.x=0;input.y=0}input.dash=!!keys.shift||dashButtonHeld;requestAnimationFrame(updateKeys)}requestAnimationFrame(updateKeys);
 const joy=$('joy'),stick=$('stick');function joyMove(e){if(!joyOrigin)return;const rect=joy.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const len=Math.hypot(dx,dy),max=39;if(len>max){dx=dx/len*max;dy=dy/len*max}stick.style.left=(34+dx)+'px';stick.style.top=(34+dy)+'px';setMove(dx/max,dy/max)}
 joy.addEventListener('pointerdown',e=>{e.preventDefault();joyPointer=e.pointerId;joyOrigin={x:e.clientX,y:e.clientY};joy.setPointerCapture(e.pointerId);joyMove(e)});joy.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer)joyMove(e)});function joyEnd(){joyPointer=null;joyOrigin=null;stick.style.left='34px';stick.style.top='34px';setMove(0,0)}joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>{career.type=b.dataset.type;save();toast('スタイルを変更しました');renderCareer()}));
