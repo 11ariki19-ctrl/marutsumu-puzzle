@@ -1,44 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
-
-test('the game has the main player-focused screens and actions', () => {
-  for (const label of ['選手一覧', 'スカウト候補', '選手育成', '試合', 'パス', 'ドリブル', 'シュート', '必殺シュート', 'タックル']) {
-    assert.ok(html.includes(label), 'missing UI label: ' + label);
-  }
-  for (const fn of ['startMatch', 'action', 'finishMatch', 'scout', 'train', 'actTraining', 'save', 'load', 'normalize']) {
-    assert.match(script, new RegExp('function\\s+' + fn + '\\s*\\('), 'missing function: ' + fn);
-  }
-});
-
-test('match controls support pointer dragging and keep players inside the pitch', () => {
-  assert.match(script, /addEventListener\('pointerdown'/);
-  assert.match(script, /addEventListener\('pointermove'/);
-  assert.match(script, /setPointerCapture/);
-  assert.match(script, /Math\.max\(\.04,Math\.min\(\.96/);
-  assert.match(html, /touch-action\s*:\s*none/i);
-});
-
-test('match actions have situation checks and ability-based success rates', () => {
-  assert.match(script, /m\.gauge<35/);
-  assert.match(script, /dist>range/);
-  assert.match(script, /p\.pass-50/);
-  assert.match(script, /p\.shoot-45/);
-  assert.match(script, /p\.def-owner\.atk/);
-});
-
-test('match completion records history and awards player experience', () => {
-  assert.match(script, /s\.history\.unshift/);
-  assert.match(script, /p\.apps\+\+/);
-  assert.match(script, /p\.exp\+=18/);
-  assert.match(script, /localStorage\.setItem\(STORE2/);
-});
-
-test('legacy saves are normalized and club-facility screens are absent', () => {
-  assert.match(script, /function\s+normalize\s*\(/);
-  assert.doesNotMatch(html, /クラブ施設の建設|クラブタウンのマップ|スポンサー契約画面/);
-  assert.doesNotMatch(html, /data-action="[^"]*(?:facility|sponsor|town)[^"]*"/i);
-});
+import {createMatch,stepMatch,act,settleCareer,trainCareer,normalizeSave,movePlayer,distance} from '../engine.js';
+test('match initializes valid positions and rules',()=>{const m=createMatch(1);assert.equal(m.status,'playing');assert.equal(m.time,90);assert.deepEqual(m.score,[0,0]);assert.equal(m.players.length,2);assert.ok(m.players.every(p=>p.x>=0&&p.x<=1000));});
+test('movement stays inside the arena and dash consumes energy',()=>{const m=createMatch(2),p=m.players[0];p.x=990;movePlayer(p,1,0,.1,{speed:1},true);assert.ok(p.x<=972);assert.ok(p.energy<100);});
+test('break action checks range and launches the core when close',()=>{const m=createMatch(3);assert.equal(act(m,0,'break').ok,false);m.players[0].x=m.core.x-10;m.players[0].y=m.core.y;assert.equal(act(m,0,'break',{power:1}).ok,true);assert.ok(Math.abs(m.core.vx)>0);});
+test('claim action only succeeds within range',()=>{const m=createMatch(4);assert.equal(act(m,0,'claim').ok,false);m.players[0].x=m.core.x;m.players[0].y=m.core.y;assert.equal(act(m,0,'claim').ok,true);assert.equal(m.core.owner,0);});
+test('match simulation advances time and eventually ends at zero time',()=>{const m=createMatch(5);for(let i=0;i<1900;i++)stepMatch(m,.05,{x:0,y:0});assert.equal(m.status,'finished');assert.equal(m.time,0);});
+test('career rewards wins, training spends coins and raises stat',()=>{const c=normalizeSave(null),m=createMatch(6);m.score=[2,1];const r=settleCareer(c,m);assert.equal(r.won,true);assert.equal(c.wins,1);const before=c.stats.speed;assert.equal(trainCareer(c,'speed').ok,true);assert.ok(c.stats.speed>before);});
+test('save normalization repairs invalid or legacy data',()=>{const c=normalizeSave({type:'???',level:-5,coins:-8,stats:{speed:1.2}});assert.equal(c.type,'sprinter');assert.equal(c.level,1);assert.equal(c.coins,0);assert.equal(c.stats.speed,1.2);assert.ok(Array.isArray(c.history));});
