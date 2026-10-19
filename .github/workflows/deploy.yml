@@ -1,4 +1,4 @@
-name: Deploy static site to GitHub Pages
+name: Deploy RIFT ATHLETICS to GitHub Pages
 on:
   push:
     branches: ["main"]
@@ -11,32 +11,20 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate inline JavaScript syntax
-        run: |
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          html = Path("index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
-          if not scripts:
-              raise SystemExit("No inline script found")
-          Path("/tmp/game.js").write_text("\n".join(scripts), encoding="utf-8")
-          PY
-          node --check /tmp/game.js
-      - name: Run game smoke tests
+      - name: Check engine syntax
+        run: node --check engine.js
+      - name: Run gameplay tests
         run: node --test tests/smoke.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload site
+      - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
@@ -45,7 +33,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: test-and-build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
