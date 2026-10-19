@@ -22,6 +22,7 @@ export function act(m,who,kind,playerStats={power:1,control:1}){
  const p=m.players[who],c=m.core,other=m.players[1-who],d=distance(p,c);
  if(kind==='break'){
   if(p.energy<15)return {ok:false,reason:'energy'};
+  if(d>=82)return {ok:false,reason:'range'};
   p.energy-=15;
   if(d<82){
    const dx=c.x-p.x,dy=c.y-p.y,l=Math.max(1,Math.hypot(dx,dy));
@@ -36,7 +37,7 @@ export function act(m,who,kind,playerStats={power:1,control:1}){
   p.energy-=35;
   const dx=c.x-p.x,dy=c.y-p.y,l=Math.max(1,Math.hypot(dx,dy));
   if(d<150){c.vx+=dx/l*620*(playerStats.control||1);c.vy+=dy/l*620*(playerStats.control||1);c.owner=-1;m.events.unshift('リフトバースト！');return {ok:true}}
-  p.vx+=dx/l*160;p.vy+=dy/l*160;return {ok:true};
+  p.x=clamp(p.x+dx/l*90,28,W-28);p.y=clamp(p.y+dy/l*90,28,H-28);m.events.unshift('リフトステップ！');return {ok:true};
  }
  if(kind==='claim'&&d<42){c.owner=who;c.vx=p.vx*.35;c.vy=p.vy*.35;m.events.unshift(who===0?'コアを確保！':'CPUがコアを確保');return {ok:true}}
  return {ok:false,reason:'range'};
@@ -46,7 +47,7 @@ export function stepMatch(m,dt,input={x:0,y:0,dash:false},stats={speed:1,power:1
  dt=clamp(dt,0,.05);m.elapsed+=dt;m.time=Math.max(0,m.time-dt);
  const [p,cpu]=m.players,c=m.core;
  movePlayer(p,input.x||0,input.y||0,dt,stats,!!input.dash);
- const target=c.owner===1?{x:250,y:320}:c;
+ const target=c.owner===1?{x:42,y:320}:c;
  let dx=target.x-cpu.x,dy=target.y-cpu.y,l=Math.hypot(dx,dy)||1;
  const cpuDash=l>200&&cpu.energy>30;
  movePlayer(cpu,dx/l,dy/l,dt,{speed:1.02},cpuDash);
@@ -72,15 +73,15 @@ export function settleCareer(career,match){
  const won=match.score[0]>match.score[1],draw=match.score[0]===match.score[1];
  career.matches=(career.matches||0)+1;career.xp=(career.xp||0)+(won?45:draw?28:20);career.coins=(career.coins||0)+(won?35:draw?22:15);
  if(won)career.wins=(career.wins||0)+1;else if(!draw)career.losses=(career.losses||0)+1;
- const threshold=career.level*100;
- while(career.xp>=threshold){career.xp-=threshold;career.level++;career.stats.speed=Math.min(1.8,career.stats.speed+.025);career.stats.power=Math.min(1.8,career.stats.power+.02);career.stats.control=Math.min(1.8,career.stats.control+.025);career.skills=career.skills||['dash'];if(career.level===3&&!career.skills.includes('burst'))career.skills.push('burst')}
+ while(career.xp>=career.level*100){career.xp-=career.level*100;career.level++;career.stats.speed=Math.min(1.8,career.stats.speed+.025);career.stats.power=Math.min(1.8,career.stats.power+.02);career.stats.control=Math.min(1.8,career.stats.control+.025);career.skills=career.skills||['dash'];if(career.level===3&&!career.skills.includes('burst'))career.skills.push('burst')}
  return {won,draw,xp:won?45:draw?28:20,coins:won?35:draw?22:15,level:career.level};
 }
 export function trainCareer(career,focus){
  if(career.coins<20)return {ok:false,reason:'coins'};
- career.coins-=20;career.stats=career.stats||{speed:1,power:1,control:1,energy:1};
+ career.stats=career.stats||{speed:1,power:1,control:1,energy:1};
  const key={speed:'speed',power:'power',control:'control'}[focus]||'speed';
- career.stats[key]=Math.min(1.8,career.stats[key]+.06);return {ok:true,key,value:career.stats[key]};
+ if((Number(career.stats[key])||1)>=1.8)return {ok:false,reason:'max'};
+ career.coins-=20;career.stats[key]=Math.min(1.8,(Number(career.stats[key])||1)+.06);return {ok:true,key,value:career.stats[key]};
 }
 export function normalizeSave(raw){
  const base={type:'sprinter',level:1,xp:0,coins:60,wins:0,losses:0,matches:0,skills:['dash'],stats:{speed:1,power:1,control:1,energy:1},history:[]};
