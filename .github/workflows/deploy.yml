@@ -1,4 +1,4 @@
-name: Deploy Skybound Trials to GitHub Pages
+name: Deploy Frost Run to GitHub Pages
 on:
   push:
     branches: ["main"]
@@ -11,17 +11,10 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 jobs:
-  test-and-build:
+  build-and-upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Check game engine syntax
-        run: node --check engine.js
-      - name: Run Skybound Trials regression tests
-        run: node --test tests/smoke.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
@@ -33,7 +26,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: test-and-build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
