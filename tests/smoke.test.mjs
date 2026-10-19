@@ -92,3 +92,13 @@ test('CPU scores when carrying the core into its gate instead of stalling at the
  assert.equal(m.core.owner,-1);
  assert.equal(m.core.x,500);
 });
+
+
+test('CPU recovers when target progress stops',()=>{
+ const m=createMatch(12348),cpu=m.players[1];
+ // Force a near-wall pursuit state, then simulate enough frames for the watchdog.
+ cpu.x=972;cpu.y=320;m.core.x=999;m.core.y=320;m.core.owner=-1;
+ for(let i=0;i<50;i++)stepMatch(m,.05,{x:0,y:0});
+ assert.ok(Number.isFinite(cpu.x)&&Number.isFinite(cpu.y));
+ assert.ok(cpu.x>=28&&cpu.x<=972&&cpu.y>=28&&cpu.y<=612);
+});
