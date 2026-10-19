@@ -81,3 +81,14 @@ test('CPU can recover from a boundary stall while pursuing the core',()=>{
  assert.ok(Number.isFinite(cpu.x)&&Number.isFinite(cpu.y));
  assert.ok(cpu.x>=28&&cpu.x<=972&&cpu.y>=28&&cpu.y<=612);
 });
+
+
+test('CPU scores when carrying the core into its gate instead of stalling at the boundary',()=>{
+ const m=createMatch(12347),cpu=m.players[1];
+ cpu.x=40;cpu.y=320;cpu.vx=0;cpu.vy=0;
+ m.core.owner=1;m.core.x=40;m.core.y=320;m.core.vx=0;m.core.vy=0;
+ stepMatch(m,.05,{x:0,y:0});
+ assert.equal(m.score[1],1);
+ assert.equal(m.core.owner,-1);
+ assert.equal(m.core.x,500);
+});
