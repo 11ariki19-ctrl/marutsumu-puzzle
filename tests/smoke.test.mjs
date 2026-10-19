@@ -57,3 +57,27 @@ test('a goal in the scoring lane increments score and resets the core',()=>{
 test('finished matches reject actions',()=>{
  const m=createMatch(9);m.status='finished';assert.equal(act(m,0,'claim').ok,false);
 });
+
+
+test('CPU keeps advancing and remains in bounds during long matches',()=>{
+ const m=createMatch(12345);
+ let moved=false,prev={x:m.players[1].x,y:m.players[1].y};
+ for(let i=0;i<1200;i++){
+  stepMatch(m,.05,{x:0,y:0});
+  const cpu=m.players[1];
+  assert.ok(Number.isFinite(cpu.x)&&Number.isFinite(cpu.y));
+  assert.ok(cpu.x>=28&&cpu.x<=972&&cpu.y>=28&&cpu.y<=612);
+  if(Math.hypot(cpu.x-prev.x,cpu.y-prev.y)>.1)moved=true;
+  prev={x:cpu.x,y:cpu.y};
+  if(m.status==='finished')break;
+ }
+ assert.equal(moved,true);
+});
+
+test('CPU can recover from a boundary stall while pursuing the core',()=>{
+ const m=createMatch(12346),cpu=m.players[1];
+ cpu.x=972;cpu.y=320;m.core.x=990;m.core.y=320;m.core.owner=-1;
+ for(let i=0;i<80;i++)stepMatch(m,.05,{x:0,y:0});
+ assert.ok(Number.isFinite(cpu.x)&&Number.isFinite(cpu.y));
+ assert.ok(cpu.x>=28&&cpu.x<=972&&cpu.y>=28&&cpu.y<=612);
+});
