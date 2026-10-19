@@ -5,7 +5,7 @@ export const createPlayer=(type='sprinter',level=1)=>({type,level,xp:0,stamina:1
 export function createMatch(seed=Date.now()){
  const rand=(()=>{let s=(seed>>>0)||1;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}})();
  const p={x:170,y:320,vx:0,vy:0,r:19,energy:100,team:0,stun:0,trail:[]};
- const cpu={x:830,y:320,vx:0,vy:0,r:19,energy:100,team:1,stun:0,trail:[]};
+ const cpu={x:830,y:320,vx:0,vy:0,r:19,energy:100,team:1,stun:0,trail:[],stuckTime:0,lastX:830,lastY:320};
  return {time:MATCH_SECONDS,score:[0,0],players:[p,cpu],core:{x:500,y:320,vx:(rand()-.5)*80,vy:(rand()-.5)*80,r:12,owner:-1},arena:{phase:0,changeAt:14,lanes:[]},status:'playing',events:[],seed,elapsed:0,randomState:(seed>>>0)||1,stats:{shots:0,steals:0,dashes:0}};
 }
 export function movePlayer(p,dx,dy,dt,stats,boost=false){
@@ -47,10 +47,26 @@ export function stepMatch(m,dt,input={x:0,y:0,dash:false},stats={speed:1,power:1
  dt=clamp(dt,0,.05);m.elapsed+=dt;m.time=Math.max(0,m.time-dt);
  const [p,cpu]=m.players,c=m.core;
  movePlayer(p,input.x||0,input.y||0,dt,stats,!!input.dash);
- const target=c.owner===1?{x:42,y:320}:c;
+ // CPU AI: pursue the loose/player-held core, or carry it toward the left goal.
+ // A watchdog detects a CPU pinned against a boundary and gives it a safe recovery route.
+ let target=c.owner===1?{x:52,y:320}:c;
  let dx=target.x-cpu.x,dy=target.y-cpu.y,l=Math.hypot(dx,dy)||1;
  const cpuDash=l>200&&cpu.energy>30;
+ const oldX=cpu.x,oldY=cpu.y;
  movePlayer(cpu,dx/l,dy/l,dt,{speed:1.02},cpuDash);
+ const moved=Math.hypot(cpu.x-oldX,cpu.y-oldY);
+ if(moved<0.05&&l>42)cpu.stuckTime=(cpu.stuckTime||0)+dt;else cpu.stuckTime=0;
+ if(cpu.stuckTime>1.0){
+  // Detour away from the wall/obstacle instead of repeating the same blocked movement.
+  const detourX=clamp(target.x+(cpu.x<=32?95:cpu.x>=W-32?-95:0),55,W-55);
+  const detourY=clamp(target.y+(cpu.y<=32?95:cpu.y>=H-32?-95:0),55,H-55);
+  const ax=detourX-cpu.x,ay=detourY-cpu.y,al=Math.hypot(ax,ay)||1;
+  movePlayer(cpu,ax/al,ay/al,dt,{speed:1.08},false);
+  if(Math.hypot(cpu.x-oldX,cpu.y-oldY)>0.05)cpu.stuckTime=0;
+ }
+ // Repair invalid state defensively so one bad frame cannot freeze the whole match.
+ if(!Number.isFinite(cpu.x)||!Number.isFinite(cpu.y)){cpu.x=830;cpu.y=320;cpu.vx=0;cpu.vy=0;cpu.stuckTime=0;}
+ cpu.x=clamp(cpu.x,28,W-28);cpu.y=clamp(cpu.y,28,H-28);
  if(distance(cpu,c)<35&&c.owner!==1){c.owner=1;c.vx=cpu.vx*.35;c.vy=cpu.vy*.35}
  if(distance(p,c)<35&&c.owner!==0&&input.claim){c.owner=0;c.vx=p.vx*.35;c.vy=p.vy*.35}
  // Owner carries core unless the opponent contests it.
