@@ -75,8 +75,8 @@ export function stepMatch(m,dt,input={x:0,y:0,dash:false},stats={speed:1,power:1
  if(c.y<c.r||c.y>H-c.r){c.y=clamp(c.y,c.r,H-c.r);c.vy*=-.82}
  if(c.x<c.r||c.x>W-c.r){c.x=clamp(c.x,c.r,W-c.r);c.vx*=-.82}
  // A goal scores when the core crosses the opponent's gate.
- if(c.x>W-24&&Math.abs(c.y-H/2)<105){m.score[0]++;m.events.unshift('RIFT GOAL！ +1');resetAfterGoal(m,0)}
- else if(c.x<24&&Math.abs(c.y-H/2)<105){m.score[1]++;m.events.unshift('CPU GOAL +1');resetAfterGoal(m,1)}
+ if((c.x>W-24||(c.owner===0&&p.x>W-60))&&Math.abs(c.y-H/2)<105){m.score[0]++;m.events.unshift('RIFT GOAL！ +1');resetAfterGoal(m,0)}
+ else if((c.x<24||(c.owner===1&&cpu.x<60))&&Math.abs(c.y-H/2)<105){m.score[1]++;m.events.unshift('CPU GOAL +1');resetAfterGoal(m,1)}
  // Rotating arena modifiers create moving acceleration lanes every 14 seconds.
  if(m.elapsed>=m.arena.changeAt){m.arena.phase=(m.arena.phase+1)%3;m.arena.changeAt+=14;m.events.unshift(['フィールド変化：加速レーン','フィールド変化：反発ゾーン','フィールド変化：コア加速'][m.arena.phase]);}
  if(m.arena.phase===0&&Math.abs(c.y-170)<25)c.vx+=Math.sign(c.vx||1)*22*dt;
