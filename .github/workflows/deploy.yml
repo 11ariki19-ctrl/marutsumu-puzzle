@@ -1,4 +1,4 @@
-name: Deploy RIFT ATHLETICS to GitHub Pages
+name: Deploy Skybound Trials to GitHub Pages
 on:
   push:
     branches: ["main"]
@@ -18,9 +18,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check engine syntax
+      - name: Check game engine syntax
         run: node --check engine.js
-      - name: Run gameplay tests
+      - name: Run Skybound Trials regression tests
         run: node --test tests/smoke.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
